@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Money Booster - Gestor Inteligente</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -11,24 +13,18 @@
         theme: {
           extend: {
             colors: {
-              primary: {
-                DEFAULT: '#7A3EF3',
-                50: '#f3eefc',
-                100: '#e0ccfa',
-                500: '#7A3EF3',
-                600: '#652bd6',
-                700: '#531fa8',
-              },
-              dark: {
-                bg: '#000000',
-                card: '#121212',
-                input: '#1E1E1E',
-                text: '#FFFFFF',
-                muted: '#A0A0A0'
-              }
+              primary: { DEFAULT: '#7A3EF3', 50: '#f3eefc', 100: '#e0ccfa', 500: '#7A3EF3', 600: '#652bd6', 700: '#531fa8' },
+              dark: { bg: '#000000', card: '#121212', input: '#1E1E1E', text: '#FFFFFF', muted: '#A0A0A0' }
             },
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
+            fontFamily: { sans: ['Inter', 'sans-serif'] },
+            animation: {
+                'fade-in': 'fadeIn 0.5s ease-out',
+                'slide-in': 'slideIn 0.5s ease-out',
+                'spin': 'spin 1s linear infinite',
+            },
+            keyframes: {
+                fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                slideIn: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
             }
           },
         },
@@ -36,51 +32,449 @@
     </script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      body { background-color: #000000; color: #FFFFFF; font-family: 'Inter', sans-serif; }
+      #root { min-height: 100vh; width: 100%; display: flex; flex-direction: column; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       
-      body {
-        background-color: #000000;
-        color: #FFFFFF;
-        font-family: 'Inter', sans-serif;
-      }
-      
-      #root {
-        min-height: 100vh;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-      }
-
-      /* Hide scrollbar for clean UI */
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-      
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-      .animate-spin {
-        animation: spin 1s linear infinite;
-      }
+      /* Loading Spinner CSS */
+      .loader { border: 4px solid #333; border-top: 4px solid #7A3EF3; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-  <script type="importmap">
+
+    <!-- React Dependencies (Ordem Importante) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/history@5/umd/history.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-router@6.3.0/umd/react-router.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-router-dom@6.3.0/umd/react-router-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/recharts@2.1.9/umd/Recharts.js"></script>
+    
+    <!-- Babel Standalone para compilar JSX no navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="importmap">
 {
   "imports": {
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
     "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6",
+    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.83.0",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
   }
 }
 </script>
 </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<body>
+    <!-- Container Principal -->
+    <div id="root">
+        <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+            <div class="loader"></div>
+            <p style="margin-top: 20px; font-size: 14px; opacity: 0.7;">Carregando Money Booster...</p>
+        </div>
+    </div>
+
+    <!-- Tratamento de Erro Global -->
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error("Erro global:", error);
+            // Se o app não carregar em 3 segundos, mostra erro
+            setTimeout(function() {
+                if (document.querySelector('.loader')) {
+                    document.getElementById('root').innerHTML = '<div style="padding:20px; color:white; text-align:center"><h3>Opa! Algo deu errado.</h3><p>Verifique sua conexão com a internet (necessária para carregar o React na primeira vez).</p><p style="color:red; font-size:12px; margin-top:10px">'+message+'</p></div>';
+                }
+            }, 3000);
+        };
+    </script>
+
+    <!-- Lógica do App -->
+    <script type="text/babel" data-presets="env,react">
+        // --- 1. GLOBALS DESTRUCTURING (Fix para rodar direto no browser) ---
+        const { useState, useEffect, useMemo } = React;
+        const { HashRouter, Routes, Route, Link, useLocation, useNavigate, Navigate } = ReactRouterDOM;
+        const { PieChart, Pie, Cell, ResponsiveContainer, Tooltip: RechartsTooltip, BarChart, Bar, XAxis } = Recharts;
+
+        // --- 2. ÍCONES SVG NATIVOS (Para não depender de script externo) ---
+        const Icon = ({ name, size = 24, className = "", ...props }) => {
+            const icons = {
+                LayoutDashboard: <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />,
+                PlusCircle: <><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></>,
+                History: <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/><path d="M3 3v9h9"/><path d="M12 7v5l3 3"/>,
+                Settings: <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>,
+                Wallet: <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>,
+                Flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.113.434-2.128 1.135-2.912C6.8 12.8 7.5 13.5 8.5 14.5Z"/>,
+                Trophy: <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>,
+                Star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,
+                AlertTriangle: <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>,
+                CheckCircle: <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/>,
+                Check: <path d="M20 6 9 17l-5-5"/>,
+                Target: <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>,
+                Lightbulb: <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2 1.5-3.5a6 6 0 0 0-11 0c0 1.5.5 2.5 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>,
+                ChevronLeft: <path d="m15 18-6-6 6-6"/>,
+                Trash2: <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>,
+                Scan: <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>,
+                CreditCard: <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>,
+                Calculator: <rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>,
+                X: <path d="M18 6 6 18"/><path d="M6 6 18 18"/>,
+                ChevronRight: <path d="m9 18 6-6-6-6"/>,
+                Calendar: <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>,
+                Download: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>,
+                Flag: <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>,
+                Zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>,
+                PiggyBank: <path d="M19 5c-1.5 0-2.8.6-3.5 1.3a2 2 0 0 0-1.8 1.3 2 2 0 0 0-3.2 1.4A2 2 0 0 0 8.9 10C7.9 10 7 11 7 12c0 .1 0 .2.1.3a2 2 0 0 0-1.1 1.7c0 1 .8 1.9 1.9 1.9h2a2 2 0 0 0 2-2v-1.2a2 2 0 0 1 1.6-.4h.5a2 2 0 0 1 2 2V16a2 2 0 0 1-2 2h-2c-1.1 0-2 .9-2 2v1a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2v-1a2 2 0 0 1 2-2h2a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2h-1.3a2 2 0 0 0-1.7-1.3 2 2 0 0 0-1-1.7Z"/><path d="M16 5h0"/>,
+            };
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+                    {icons[name] || <circle cx="12" cy="12" r="10"/>}
+                </svg>
+            );
+        };
+
+        // --- 3. CONSTANTES & DADOS ---
+        const DEFAULT_CATEGORIES = [
+            { id: 'cat_1', name: 'Alimentação', color: '#EF4444', isDefault: true },
+            { id: 'cat_2', name: 'Contas', color: '#F59E0B', isDefault: true },
+            { id: 'cat_3', name: 'Transporte', color: '#3B82F6', isDefault: true },
+            { id: 'cat_4', name: 'Lazer', color: '#8B5CF6', isDefault: true },
+            { id: 'cat_5', name: 'Compras', color: '#EC4899', isDefault: true },
+            { id: 'cat_6', name: 'Saúde', color: '#10B981', isDefault: true },
+            { id: 'cat_7', name: 'Outros', color: '#6B7280', isDefault: true },
+        ];
+
+        const BADGES = [
+            { id: 'first_log', name: 'Primeiro Passo', description: 'Registrou o primeiro gasto', icon: 'Flag', color: '#3B82F6' },
+            { id: 'streak_3', name: 'No Foco', description: '3 dias seguidos de registros', icon: 'Flame', color: '#F59E0B' },
+            { id: 'streak_7', name: 'Hábito de Aço', description: '7 dias seguidos de registros', icon: 'Zap', color: '#8B5CF6' },
+            { id: 'smart_saver', name: 'Economista', description: 'Manteve o gasto dentro da meta', icon: 'PiggyBank', color: '#10B981' },
+            { id: 'xp_master', name: 'Level Up', description: 'Atingiu o nível 5', icon: 'Trophy', color: '#EC4899' },
+        ];
+
+        // --- 4. BACKEND SIMULADO (LocalStorage) ---
+        const STORAGE_KEYS = { USER: 'mb_user', EXPENSES: 'mb_expenses', GOALS: 'mb_goals', CATEGORIES: 'mb_categories' };
+
+        const mockBackend = {
+            getCurrentUser: async () => {
+                try {
+                    const stored = localStorage.getItem(STORAGE_KEYS.USER);
+                    if (stored) return JSON.parse(stored);
+                    const newUser = { id: 'local_user', name: 'Visitante', email: '', status: 'ACTIVE', xp: 0, level: 1, streak: 0, badges: [], hasSeenTutorial: false };
+                    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser));
+                    return newUser;
+                } catch (e) { console.error(e); return null; }
+            },
+            markTutorialSeen: async (userId) => {
+                const user = await mockBackend.getCurrentUser();
+                if (user) {
+                    const updated = { ...user, hasSeenTutorial: true };
+                    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updated));
+                }
+            },
+            getExpenses: async (userId) => {
+                const stored = localStorage.getItem(STORAGE_KEYS.EXPENSES);
+                return stored ? JSON.parse(stored) : [];
+            },
+            addExpense: async (expenseData) => {
+                const expenses = await mockBackend.getExpenses(expenseData.userId);
+                const newExpense = { ...expenseData, id: Math.random().toString(36).substr(2, 9) };
+                expenses.push(newExpense);
+                localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
+
+                const currentUser = await mockBackend.getCurrentUser();
+                let xpGained = 20; 
+                const today = new Date().toISOString().split('T')[0];
+                const lastLog = currentUser.lastLogDate;
+                let streak = currentUser.streak || 0;
+                if (lastLog) {
+                    const lastDate = new Date(lastLog);
+                    const currDate = new Date(today);
+                    const diffTime = Math.abs(currDate.getTime() - lastDate.getTime());
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    if (diffDays === 1) { streak += 1; xpGained += 10; }
+                    else if (diffDays > 1) { streak = 1; }
+                } else { streak = 1; }
+
+                // Budget Check
+                const goals = await mockBackend.getGoals(currentUser.id);
+                const categoryGoal = goals.find(g => g.categoryId === expenseData.categoryId && g.period === 'monthly');
+                if (categoryGoal) {
+                    const currentTotal = expenses.filter(e => e.categoryId === expenseData.categoryId).reduce((acc, curr) => acc + curr.value, 0);
+                    if (currentTotal <= categoryGoal.amount) xpGained += 50;
+                }
+
+                const newXp = (currentUser.xp || 0) + xpGained;
+                const newLevel = Math.floor(newXp / 500) + 1;
+                const existingBadges = currentUser.badges || [];
+                const newBadges = [];
+                if (expenses.length === 1 && !existingBadges.includes('first_log')) { newBadges.push('first_log'); existingBadges.push('first_log'); }
+                if (streak >= 3 && !existingBadges.includes('streak_3')) { newBadges.push('streak_3'); existingBadges.push('streak_3'); }
+
+                const updatedUser = { ...currentUser, xp: newXp, level: newLevel, streak: streak, lastLogDate: today, badges: existingBadges };
+                localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));
+                return { expense: newExpense, xpGained, newBadges };
+            },
+            deleteExpense: async (id) => {
+                const expenses = await mockBackend.getExpenses('local_user');
+                const filtered = expenses.filter(e => e.id !== id);
+                localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(filtered));
+            },
+            getCategories: async (userId) => {
+                const stored = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+                return stored ? JSON.parse(stored) : DEFAULT_CATEGORIES;
+            },
+            getGoals: async (userId) => {
+                const stored = localStorage.getItem(STORAGE_KEYS.GOALS);
+                return stored ? JSON.parse(stored) : [];
+            },
+            setGoal: async (goal) => {
+                const goals = await mockBackend.getGoals(goal.userId);
+                const filtered = goals.filter(g => !(g.categoryId === goal.categoryId && g.period === goal.period));
+                const newGoal = { ...goal, id: Math.random().toString(36).substr(2, 9) };
+                filtered.push(newGoal);
+                localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(filtered));
+                return newGoal;
+            },
+            getSmartTips: async (userId) => {
+                const expenses = await mockBackend.getExpenses(userId);
+                const categories = await mockBackend.getCategories(userId);
+                const tips = [];
+                if (expenses.length === 0) return [{ id: '1', title: 'Comece agora', message: 'Adicione seu primeiro gasto para receber insights.', type: 'info' }];
+                const total = expenses.reduce((acc, curr) => acc + curr.value, 0);
+                const catTotals = {};
+                expenses.forEach(e => { catTotals[e.categoryId] = (catTotals[e.categoryId] || 0) + e.value; });
+                const topCatId = Object.keys(catTotals).reduce((a, b) => catTotals[a] > catTotals[b] ? a : b, Object.keys(catTotals)[0]);
+                const topCatVal = catTotals[topCatId];
+                const topCatName = categories.find(c => c.id === topCatId)?.name || 'Desconhecido';
+                const percent = Math.round((topCatVal / total) * 100);
+                if (percent > 40) { tips.push({ id: 'warn_1', title: 'Alerta de Gasto', message: `${topCatName} consumiu ${percent}% do seu dinheiro.`, type: 'warning' }); }
+                tips.push({ id: 'info_1', title: 'Resumo', message: `Você já gastou R$ ${total.toFixed(2)} no total.`, type: 'info' });
+                return tips;
+            }
+        };
+
+        // --- 5. COMPONENTES ---
+        const TutorialOverlay = ({ onComplete }) => {
+            const [step, setStep] = useState(0);
+            const steps = [
+                { title: "Bem-vindo!", content: "Transforme sua vida financeira. Vou te mostrar como o app funciona.", icon: "LayoutDashboard", color: "text-primary-500" },
+                { title: "Registre Gastos", content: "Use o botão '+' para adicionar despesas. Ganhe XP e conquistas!", icon: "PlusCircle", color: "text-emerald-500" },
+                { title: "Defina Metas", content: "Vá em Configurações para definir limites. Avisaremos se ficar no 'Vermelho'.", icon: "Target", color: "text-red-500" },
+                { title: "Tudo pronto!", content: "Mantenha a constância e veja seu dinheiro render.", icon: "CheckCircle", color: "text-yellow-400" }
+            ];
+            const currentStep = steps[step];
+            const handleNext = () => { if (step < steps.length - 1) setStep(step + 1); else onComplete(); };
+
+            return (
+                <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+                    <div className="bg-dark-card border border-white/10 rounded-2xl p-8 max-w-sm w-full shadow-2xl relative overflow-hidden">
+                        <button onClick={onComplete} className="absolute top-4 right-4 text-dark-muted hover:text-white"><Icon name="X" size={20}/></button>
+                        <div className="flex flex-col items-center text-center">
+                            <div className="mb-6 p-4 bg-white/5 rounded-full border border-white/5"><Icon name={currentStep.icon} size={48} className={currentStep.color} /></div>
+                            <h2 className="text-2xl font-bold text-white mb-3">{currentStep.title}</h2>
+                            <p className="text-slate-300 text-sm leading-relaxed mb-8 min-h-[60px]">{currentStep.content}</p>
+                            <div className="flex gap-2 w-full items-center">
+                                <div className="flex gap-1 items-center justify-center flex-1 mr-4">
+                                    {steps.map((_, idx) => <div key={idx} className={`h-1.5 rounded-full transition-all ${idx === step ? 'w-6 bg-primary-500' : 'w-1.5 bg-white/10'}`} />)}
+                                </div>
+                                <button onClick={handleNext} className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2">{step === steps.length - 1 ? 'Começar' : 'Próximo'} <Icon name="ChevronRight" size={16} /></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Layout = ({ children }) => {
+            const location = useLocation();
+            const isActive = (path) => location.pathname === path;
+            return (
+                <div className="min-h-screen bg-dark-bg text-dark-text font-sans flex flex-col pb-20 md:pb-0">
+                    <main className="flex-1 relative z-0">{children}</main>
+                    <nav className="fixed bottom-0 left-0 right-0 bg-dark-card border-t border-white/10 pb-safe z-50">
+                        <div className="flex justify-around items-center h-16 px-2">
+                            <Link to="/" className={`flex flex-col items-center p-2 transition-colors ${isActive('/') ? 'text-primary-500' : 'text-dark-muted'}`}><Icon name="LayoutDashboard" size={24} strokeWidth={isActive('/')?2.5:2} /><span className="text-[10px] mt-1 font-medium">Home</span></Link>
+                            <Link to="/add" className={`flex flex-col items-center p-2 transition-colors ${isActive('/add') ? 'text-primary-500' : 'text-dark-muted'}`}><Icon name="PlusCircle" size={24} strokeWidth={isActive('/add')?2.5:2} /><span className="text-[10px] mt-1 font-medium">Add</span></Link>
+                            <Link to="/history" className={`flex flex-col items-center p-2 transition-colors ${isActive('/history') ? 'text-primary-500' : 'text-dark-muted'}`}><Icon name="History" size={24} strokeWidth={isActive('/history')?2.5:2} /><span className="text-[10px] mt-1 font-medium">Histórico</span></Link>
+                            <Link to="/settings" className={`flex flex-col items-center p-2 transition-colors ${isActive('/settings') ? 'text-primary-500' : 'text-dark-muted'}`}><Icon name="Settings" size={24} strokeWidth={isActive('/settings')?2.5:2} /><span className="text-[10px] mt-1 font-medium">Config</span></Link>
+                        </div>
+                    </nav>
+                </div>
+            );
+        };
+
+        // --- 6. PÁGINAS ---
+        const Dashboard = ({ user }) => {
+            const [localUser, setLocalUser] = useState(user);
+            const [expenses, setExpenses] = useState([]);
+            const [categories, setCategories] = useState([]);
+            const [tips, setTips] = useState([]);
+            const [goals, setGoals] = useState([]);
+            const [showTutorial, setShowTutorial] = useState(false);
+            const [timeframe, setTimeframe] = useState('month');
+
+            useEffect(() => {
+                const loadData = async () => {
+                    const freshUser = await mockBackend.getCurrentUser();
+                    if (freshUser) {
+                        setLocalUser(freshUser);
+                        const [exp, cats, userGoals, generatedTips] = await Promise.all([mockBackend.getExpenses(freshUser.id), mockBackend.getCategories(freshUser.id), mockBackend.getGoals(freshUser.id), mockBackend.getSmartTips(freshUser.id)]);
+                        setExpenses(exp); setCategories(cats); setGoals(userGoals); setTips(generatedTips);
+                        if (freshUser.hasSeenTutorial === false) setShowTutorial(true);
+                    }
+                };
+                loadData();
+            }, [user.id]);
+
+            const handleTutorialComplete = async () => { await mockBackend.markTutorialSeen(user.id); setShowTutorial(false); setLocalUser(prev => ({ ...prev, hasSeenTutorial: true })); };
+            const now = new Date();
+            const filteredExpenses = expenses.filter(e => {
+                const d = new Date(e.date);
+                if (timeframe === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                else { const oneWeekAgo = new Date(); oneWeekAgo.setDate(now.getDate() - 7); return d >= oneWeekAgo; }
+            });
+            const total = filteredExpenses.reduce((acc, curr) => acc + curr.value, 0);
+            const totalBudget = goals.filter(g => g.period === (timeframe === 'month' ? 'monthly' : 'weekly')).reduce((acc, curr) => acc + curr.amount, 0);
+            const budgetDiff = totalBudget - total;
+            const hasBudget = totalBudget > 0;
+            const isOverBudget = hasBudget && budgetDiff < 0;
+            const chartData = categories.map(cat => ({ name: cat.name, value: filteredExpenses.filter(e => e.categoryId === cat.id).reduce((acc, c) => acc + c.value, 0), color: cat.color })).filter(d => d.value > 0);
+            const nextLevelXp = localUser.level * 500;
+            const xpProgress = (localUser.xp / nextLevelXp) * 100;
+            const userBadges = BADGES.filter(b => localUser.badges?.includes(b.id));
+
+            return (
+                <>
+                    {showTutorial && <TutorialOverlay onComplete={handleTutorialComplete} />}
+                    <div className="p-6 space-y-8 animate-fade-in pb-24">
+                        <div className="flex justify-between items-center">
+                            <div><p className="text-dark-muted text-sm">Visão Geral</p><h1 className="text-2xl font-bold text-white">Olá, {localUser.name}</h1></div>
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1 bg-orange-500/20 px-2 py-1 rounded-lg border border-orange-500/30"><Icon name="Flame" size={16} className="text-orange-500 fill-orange-500" /><span className="text-orange-400 font-bold text-sm">{localUser.streak || 0}</span></div>
+                                <div className="w-10 h-10 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-500 font-bold border border-primary-500/30">{localUser.name[0]}</div>
+                            </div>
+                        </div>
+                        <div className="bg-dark-card border border-white/5 rounded-xl p-4">
+                            <div className="flex justify-between items-center mb-2"><div className="flex items-center gap-2"><div className="bg-yellow-500/20 p-1.5 rounded-lg"><Icon name="Trophy" size={16} className="text-yellow-500" /></div><span className="text-xs text-dark-muted uppercase font-bold">Nível {localUser.level}</span></div><span className="text-xs text-white font-mono">{localUser.xp} / {nextLevelXp} XP</span></div>
+                            <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden"><div className="bg-gradient-to-r from-primary-600 to-primary-400 h-full rounded-full transition-all duration-1000" style={{ width: `${xpProgress}%` }}></div></div>
+                        </div>
+                        {hasBudget ? (
+                            <div className={`p-5 rounded-2xl border flex items-start gap-4 shadow-lg animate-slide-in ${isOverBudget ? 'bg-red-950/40 border-red-500/50' : 'bg-emerald-950/40 border-emerald-500/50'}`}>
+                                <div className={`p-3 rounded-full shrink-0 ${isOverBudget ? 'bg-red-500/20 text-red-500' : 'bg-emerald-500/20 text-emerald-500'}`}><Icon name={isOverBudget ? "AlertTriangle" : "CheckCircle"} size={24} /></div>
+                                <div><h3 className={`text-lg font-bold ${isOverBudget ? 'text-red-400' : 'text-emerald-400'}`}>{isOverBudget ? 'Atenção: Saldo Negativo!' : 'Parabéns: Saldo Positivo!'}</h3><p className="text-slate-300 text-sm mt-2">{isOverBudget ? <span>Ultrapassou meta em <strong className="text-red-400">R$ {Math.abs(budgetDiff).toFixed(2)}</strong>.</span> : <span>Ainda tem <strong className="text-emerald-400">R$ {budgetDiff.toFixed(2)}</strong>.</span>}</p></div>
+                            </div>
+                        ) : (
+                            <div className="bg-slate-800/50 border border-dashed border-slate-600 rounded-xl p-4 flex items-center gap-3"><div className="bg-slate-700 p-2 rounded-full"><Icon name="Target" className="text-slate-400" size={20}/></div><div className="flex-1"><p className="text-slate-300 text-sm font-medium">Defina suas Metas</p><p className="text-slate-500 text-xs">Adicione limites em Configurações.</p></div></div>
+                        )}
+                        <div className="bg-primary-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                            <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-start mb-4"><div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm"><Icon name="Wallet" size={20} /></div><select value={timeframe} onChange={(e) => setTimeframe(e.target.value)} className="bg-black/20 border-none text-xs rounded-lg px-2 py-1 text-white font-medium focus:outline-none"><option value="week">Esta Semana</option><option value="month">Este Mês</option></select></div>
+                                <p className="text-primary-100 text-sm mb-1">Total Gasto</p><h2 className="text-4xl font-bold tracking-tight">R$ {total.toFixed(2)}</h2>
+                            </div>
+                        </div>
+                        {userBadges.length > 0 && (<div><h3 className="text-white font-semibold text-lg mb-3 flex items-center gap-2"><Icon name="Star" size={18} className="text-yellow-400 fill-yellow-400" /> Conquistas</h3><div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">{userBadges.map(badge => (<div key={badge.id} className="bg-dark-card border border-white/5 p-3 rounded-xl min-w-[120px] flex flex-col items-center text-center"><div className="w-10 h-10 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: `${badge.color}20` }}><Icon name={badge.icon} size={20} style={{ color: badge.color }} /></div><span className="text-xs font-bold text-white">{badge.name}</span></div>))}</div></div>)}
+                        {chartData.length > 0 ? (
+                            <div className="bg-dark-card border border-white/5 rounded-2xl p-6"><h3 className="text-white font-semibold mb-4">Por onde sai o dinheiro</h3><div className="h-48 w-full relative"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={chartData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value" stroke="none">{chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}</Pie><RechartsTooltip contentStyle={{ backgroundColor: '#1E1E1E', border: 'none', borderRadius: '8px', color: '#FFF' }} itemStyle={{ color: '#FFF' }} /></PieChart></ResponsiveContainer><div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none"><span className="text-xs text-dark-muted block">Top</span><span className="text-sm font-bold text-white">{chartData.sort((a,b) => b.value - a.value)[0].name}</span></div></div></div>
+                        ) : ( <div className="text-center py-10 text-dark-muted"><p>Sem dados para exibir ainda.</p></div> )}
+                    </div>
+                </>
+            );
+        };
+
+        const Expenses = ({ user }) => {
+            const navigate = useNavigate();
+            const [amount, setAmount] = useState('');
+            const [description, setDescription] = useState('');
+            const [categoryId, setCategoryId] = useState('');
+            const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+            const [categories, setCategories] = useState([]);
+            const [showFeedback, setShowFeedback] = useState(null);
+
+            useEffect(() => { mockBackend.getCategories(user.id).then(setCategories); }, [user.id]);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!amount || !categoryId) return;
+                const result = await mockBackend.addExpense({ userId: user.id, value: parseFloat(amount.replace(',', '.')), description, categoryId, date });
+                if (result.xpGained > 0) { setShowFeedback({ xp: result.xpGained, badge: result.newBadges[0] }); setTimeout(() => navigate('/'), 1800); } else navigate('/');
+            };
+
+            return (
+                <div className="p-6 min-h-screen flex flex-col relative">
+                    <div className="flex items-center gap-4 mb-8"><button onClick={() => navigate(-1)} className="text-dark-muted hover:text-white"><Icon name="ChevronLeft" size={24} /></button><h1 className="text-xl font-bold text-white">Adicionar Gasto</h1></div>
+                    <form onSubmit={handleSubmit} className="flex-1 flex flex-col space-y-6">
+                        <div><label className="block text-xs font-bold text-dark-muted uppercase mb-2">Valor (R$)</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" className="w-full bg-transparent border-b-2 border-white/20 py-4 text-4xl font-bold text-white focus:outline-none focus:border-primary-500 placeholder-white/10" autoFocus /></div>
+                        <div><label className="block text-xs font-bold text-dark-muted uppercase mb-2">Categoria</label><div className="grid grid-cols-3 gap-3">{categories.map(cat => (<button key={cat.id} type="button" onClick={() => setCategoryId(cat.id)} className={`p-3 rounded-xl text-xs font-medium transition-all border ${categoryId === cat.id ? 'bg-primary-600 border-primary-500 text-white' : 'bg-dark-card border-white/5 text-dark-muted'}`}>{cat.name}</button>))}</div></div>
+                        <div><label className="block text-xs font-bold text-dark-muted uppercase mb-2">Detalhes</label><input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: Almoço" className="w-full bg-dark-input border border-white/10 rounded-xl px-4 py-3 text-white" /></div>
+                        <div><label className="block text-xs font-bold text-dark-muted uppercase mb-2">Data</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full bg-dark-input border border-white/10 rounded-xl px-4 py-3 text-white" /></div>
+                        <div className="flex-1"></div><button type="submit" disabled={!amount || !categoryId} className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg"><Icon name="Check" size={20} /> Salvar Gasto</button>
+                    </form>
+                    {showFeedback && (<div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center animate-fade-in"><div className="bg-dark-card border border-white/10 p-8 rounded-2xl flex flex-col items-center text-center shadow-2xl transform animate-slide-in"><div className="w-20 h-20 bg-yellow-500 rounded-full flex items-center justify-center mb-4 animate-bounce"><Icon name="Star" size={40} className="text-black fill-black" /></div><h2 className="text-2xl font-bold text-white mb-1">Registro Salvo!</h2><p className="text-yellow-400 font-bold text-xl">+{showFeedback.xp} XP</p></div></div>)}
+                </div>
+            );
+        };
+
+        const History = ({ user }) => {
+            const [expenses, setExpenses] = useState([]);
+            const [categories, setCategories] = useState([]);
+            useEffect(() => { const fetchData = async () => { const [exp, cats] = await Promise.all([mockBackend.getExpenses(user.id), mockBackend.getCategories(user.id)]); setExpenses(exp); setCategories(cats); }; fetchData(); }, [user.id]);
+            const handleDelete = async (id) => { if (confirm('Excluir este gasto?')) { await mockBackend.deleteExpense(id); setExpenses(prev => prev.filter(e => e.id !== id)); } };
+            const getCategory = (id) => categories.find(c => c.id === id);
+            const grouped = expenses.reduce((acc, curr) => { const date = curr.date; if (!acc[date]) acc[date] = []; acc[date].push(curr); return acc; }, {});
+
+            return (
+                <div className="p-6 min-h-screen pb-24">
+                    <h1 className="text-2xl font-bold text-white mb-6">Histórico</h1>
+                    {expenses.length === 0 ? <div className="text-center text-dark-muted mt-20"><Icon name="Calendar" className="w-12 h-12 mx-auto mb-4 opacity-20" /><p>Nenhum registro.</p></div> : (
+                        <div className="space-y-6">{Object.keys(grouped).map(date => (<div key={date}><h3 className="text-sm font-bold text-dark-muted mb-3 sticky top-0 bg-dark-bg py-2">{new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}</h3><div className="space-y-3">{grouped[date].map(expense => { const cat = getCategory(expense.categoryId); return (<div key={expense.id} className="bg-dark-card border border-white/5 p-4 rounded-xl flex items-center justify-between group"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: `${cat?.color}20`, color: cat?.color }}>{cat?.name[0]}</div><div><p className="text-white font-medium">{expense.description || cat?.name}</p><p className="text-xs text-dark-muted">{cat?.name}</p></div></div><div className="text-right"><p className="text-white font-bold">-R$ {expense.value.toFixed(2)}</p><button onClick={() => handleDelete(expense.id)} className="text-red-500 text-xs mt-1"><Icon name="Trash2" size={12} /> Excluir</button></div></div>); })}</div></div>))}</div>
+                    )}
+                </div>
+            );
+        };
+
+        const Settings = ({ user }) => {
+            const [categories, setCategories] = useState([]);
+            const [goals, setGoals] = useState([]);
+            const [editGoal, setEditGoal] = useState(null);
+            useEffect(() => { const load = async () => { setCategories(await mockBackend.getCategories(user.id)); setGoals(await mockBackend.getGoals(user.id)); }; load(); }, [user.id]);
+            const handleSaveGoal = async () => { if (!editGoal) return; await mockBackend.setGoal({ userId: user.id, categoryId: editGoal.catId, amount: parseFloat(editGoal.amount), period: 'monthly' }); setGoals(await mockBackend.getGoals(user.id)); setEditGoal(null); };
+            const handleReset = () => { if (confirm("Apagar todos os dados?")) { localStorage.clear(); window.location.reload(); } };
+
+            return (
+                <div className="p-6 min-h-screen pb-24">
+                    <h1 className="text-2xl font-bold text-white mb-8">Configurações</h1>
+                    <div className="bg-dark-card border border-white/5 rounded-2xl p-6 mb-8 flex items-center gap-4"><div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white text-xl font-bold">{user.name[0]}</div><div><h2 className="text-white font-bold">{user.name}</h2><p className="text-dark-muted text-sm">Modo Visitante</p></div></div>
+                    <div className="mb-8"><h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Icon name="Target" className="text-primary-500" size={20} /> Metas Mensais</h2><div className="space-y-3">{categories.map(cat => { const goal = goals.find(g => g.categoryId === cat.id); const isEditing = editGoal?.catId === cat.id; return (<div key={cat.id} className="bg-dark-card border border-white/5 p-4 rounded-xl flex items-center justify-between"><div className="flex items-center gap-3"><div className="w-3 h-3 rounded-full" style={{backgroundColor: cat.color}}></div><span className="text-white font-medium text-sm">{cat.name}</span></div>{isEditing ? (<div className="flex items-center gap-2"><input type="number" value={editGoal.amount} onChange={(e) => setEditGoal({...editGoal, amount: e.target.value})} className="w-20 bg-dark-input border border-white/20 rounded px-2 py-1 text-white text-sm" autoFocus /><button onClick={handleSaveGoal} className="text-primary-500 font-bold text-xs">OK</button></div>) : (<button onClick={() => setEditGoal({ catId: cat.id, amount: goal?.amount.toString() || '' })} className={`text-sm font-medium ${goal ? 'text-white' : 'text-dark-muted border-b border-dashed border-dark-muted'}`}>{goal ? `R$ ${goal.amount}` : 'Definir'}</button>)}</div>); })}</div></div>
+                    <button onClick={handleReset} className="w-full bg-red-500/10 border border-red-500/30 text-red-500 font-bold py-3 rounded-xl flex items-center justify-center gap-2 mt-8"><Icon name="Trash2" size={18} /> Resetar Tudo</button>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            useEffect(() => { const loadUser = async () => { const currentUser = await mockBackend.getCurrentUser(); setUser(currentUser); setLoading(false); }; loadUser(); }, []);
+            
+            if (loading) return null; // Loader handled by HTML
+
+            return (
+                <HashRouter>
+                    <Layout>
+                        <Routes>
+                            <Route path="/" element={<Dashboard user={user} />} />
+                            <Route path="/add" element={<Expenses user={user} />} />
+                            <Route path="/history" element={<History user={user} />} />
+                            <Route path="/settings" element={<Settings user={user} />} />
+                            <Route path="*" element={<Navigate to="/" />} />
+                        </Routes>
+                    </Layout>
+                </HashRouter>
+            );
+        };
+
+        // --- 7. RENDERIZAÇÃO ---
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
 </html>
